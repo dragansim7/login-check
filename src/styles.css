@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --color-bg: #0e1211;
+  --color-surface: #171d1b;
+  --color-raised: #1e2623;
+  --color-fg: #e7eee9;
+  --color-muted: #8d9b94;
+  --color-line: #2c3833;
+  --color-accent: #3dcc8a;
+  --color-accent-ink: #062117;
+  --color-danger: #e26d6d;
+  --color-warn: #e2b15a;
+  --radius-card: 0.875rem;
+}
+
+@layer base {
+  html,
+  body {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+}
