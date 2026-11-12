@@ -15,7 +15,7 @@ export const Route = createRootRoute({
         name: "description",
         content: "Check one login against pasted mirror hosts using the same login API.",
       },
-      { name: "theme-color", content: "#0e1211" },
+      { name: "theme-color", content: "#0b0a09" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -25,7 +25,7 @@ export const Route = createRootRoute({
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@400;500;600&display=swap",
       },
     ],
   }),

@@ -7,8 +7,8 @@
       "status": 200,
       "title": "Mirror Login Probe",
       "hasCanvas": false,
-      "bodyTextLen": 427,
-      "bodyTextHash": "bc0a1b18a745d9d3c0fbeee573c34ecb9fa9fcaac01bd822e0212cc31f797886",
+      "bodyTextLen": 379,
+      "bodyTextHash": "956f68725372426cb444dd9eff0483d00a2a34aa3d251a77fa3d75564acff913",
       "bodyTextPrefix": "LOGIN API Mirror Login Probe Paste hosts one per line. A path su",
       "horizontalOverflow": false,
       "consoleErrors": [],
@@ -21,13 +21,11 @@
       "status": 200,
       "title": "Mirror Login Probe",
       "hasCanvas": false,
-      "bodyTextLen": 427,
-      "bodyTextHash": "bc0a1b18a745d9d3c0fbeee573c34ecb9fa9fcaac01bd822e0212cc31f797886",
+      "bodyTextLen": 379,
+      "bodyTextHash": "956f68725372426cb444dd9eff0483d00a2a34aa3d251a77fa3d75564acff913",
       "bodyTextPrefix": "LOGIN API Mirror Login Probe Paste hosts one per line. A path su",
       "horizontalOverflow": false,
-      "consoleErrors": [
-        "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\n%s%s https://react.dev/link/hydration-mismatch \n\n  ...\n    <body>\n      <PreviewHostBridge>\n      <AuthProvider>\n        <OutletImpl>\n          <Suspense fallback={null}>\n            <MatchImpl routeId=\"/\">\n              <MatchView router={{...}} match={{id:\"//\",ssr:true, ...}}>\n                <CatchBoundary getResetKey={function getResetKey} errorComponent={function AppErrorComponent} ...>\n                  <MatchInnerImpl match={{id:\"//\",ssr:true, ...}}>\n                    <Lazy>\n                      <Home>\n                        <main className=\"mx-auto fl...\">\n                          <header>\n                          <section className=\"grid gap-4...\">\n                            <form className=\"flex flex-...\" onSubmit={function onSubmit}>\n                              <label className=\"flex flex-...\">\n                                <span>\n                                <input\n                                  value=\"\"\n                                  onChange={function onChange}\n                                  autoComplete=\"username\"\n                                  className=\"h-11 rounded-lg border border-line bg-bg px-3 font-mono text-sm text-fg o...\"\n                                  placeholder=\"61480050689\"\n-                                 style={{caret-color:\"transparent\"}}\n                                >\n                              <label className=\"flex flex-...\">\n                                <span>\n                                <span className=\"flex gap-2\">\n                                  <input\n                                    value=\"\"\n                                    onChange={function onChange}\n                                    type=\"password\"\n                                    autoComplete=\"current-password\"\n                                    className=\"h-11 min-w-0 flex-1 rounded-lg border border-line bg-bg px-3 font-mono ...\"\n-                                   style={{caret-color:\"transparent\"}}\n                                  >\n                                  ...\n                                ...\n                              ...\n                            <div className=\"flex min-h...\">\n                              <div>\n                              <textarea\n                                id=\"domains\"\n                                value={\"9au.com\\n9au.com/RF12345667\"}\n                                onChange={function onChange}\n                                spellCheck={false}\n                                className=\"min-h-48 flex-1 resize-y rounded-lg border border-line bg-bg p-3 font-mono ...\"\n                                placeholder={\"9au.com\\nothersite.com 60813\"}\n-                               style={{caret-color:\"transparent\"}}\n                              >\n                              ...\n                          ...\n      ...\n"
-      ],
+      "consoleErrors": [],
       "pageErrors": [],
       "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
     }

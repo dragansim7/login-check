@@ -1,145 +1,120 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { ProbeVerdict } from "@/lib/classify";
 import { isPrivateIpv4Address, parseProbeLine } from "@/lib/hosts";
+import { captchaRequired, readMerchantProfile } from "@/lib/merchant";
 
 const inputSchema = z.object({
   host: z.string().min(1).max(253),
-  mobile: z.string().min(1).max(120),
-  password: z.string().min(1).max(200),
   merchantId: z.string().regex(/^\d{3,8}$/).nullable(),
 });
 
-export type ProbeVerdict =
-  | "accepted"
-  | "no-account"
-  | "refused"
-  | "password"
-  | "captcha"
-  | "rejected"
-  | "unclear"
-  | "unreachable"
-  | "blocked";
-
-export type ProbeResult = {
+export type HostPrep = {
   host: string;
   endpoint: string;
-  verdict: ProbeVerdict;
-  httpStatus: number | null;
-  message: string;
-  snippet: string;
   merchantId: string | null;
-  ms: number;
+  needsCaptcha: boolean;
+  skip: { verdict: ProbeVerdict; message: string } | null;
 };
-
-function explainLogin(message: string): { verdict: ProbeVerdict; message: string } | null {
-  const text = message.trim();
-  if (/invalid password/i.test(text)) {
-    return {
-      verdict: "password",
-      message: "Password must be 6–20 characters. The site did not look up the account.",
-    };
-  }
-  if (/invalid captcha/i.test(text)) {
-    return {
-      verdict: "captcha",
-      message: "Captcha required. This site did not check the password.",
-    };
-  }
-  const code = text.match(/invalid login\.\s*(\d+)/i);
-  if (code?.[1] === "7") {
-    return { verdict: "no-account", message: "No account on this merchant." };
-  }
-  if (code?.[1] === "8") {
-    return {
-      verdict: "refused",
-      message: "Account found, but the login was refused. Wrong password, or this server IP is blocked.",
-    };
-  }
-  return null;
-}
-
-function classify(status: number, text: string): { verdict: ProbeVerdict; message: string } {
-  const trimmed = text.trim();
-  let json: unknown = null;
-  try {
-    json = JSON.parse(trimmed);
-  } catch {
-    json = null;
-  }
-
-  if (json && typeof json === "object") {
-    const record = json as Record<string, unknown>;
-    const data =
-      record.data && typeof record.data === "object"
-        ? (record.data as Record<string, unknown>)
-        : null;
-    const statusText = String(record.status ?? "").toUpperCase();
-    const message = String(data?.message ?? record.message ?? record.msg ?? "");
-    const explained = explainLogin(message);
-    if (explained) return explained;
-    const token = data?.accessToken ?? data?.token ?? record.accessToken ?? record.token;
-    if (typeof token === "string" && token.length > 8) {
-      return { verdict: "accepted", message: message || "Login accepted — token returned" };
-    }
-    if (statusText === "SUCCESS" || statusText === "OK" || record.success === true) {
-      return { verdict: "accepted", message: message || "Login accepted" };
-    }
-    if (statusText === "ERROR" || statusText === "FAIL" || record.success === false) {
-      return { verdict: "rejected", message: message || "Login rejected" };
-    }
-    if (message) return { verdict: "unclear", message };
-  }
-
-  const plain = explainLogin(trimmed);
-  if (plain) return plain;
-
-  if (trimmed.startsWith("<") || trimmed.startsWith("<!")) {
-    return { verdict: "unclear", message: "HTML came back instead of the login API" };
-  }
-  if (status >= 400) return { verdict: "rejected", message: `HTTP ${status}` };
-  return { verdict: "unclear", message: trimmed ? "Unexpected response" : `HTTP ${status} with an empty body` };
-}
-
-function readMerchantId(html: string): string | null {
-  const match =
-    html.match(/\bMERCHANTID\s*=\s*["']?(\d{3,8})\b/i) ??
-    html.match(/\bMERCHANT_ID\s*=\s*["']?(\d{3,8})\b/i);
-  return match?.[1] ?? null;
-}
-
-const merchantCache = new Map<string, { id: string; expires: number }>();
-const MERCHANT_TTL_MS = 30 * 60 * 1000;
 
 function sameSite(from: string, to: string): boolean {
   return to === from || to === `www.${from}` || from === `www.${to}`;
 }
 
-async function htmlUntilMerchant(response: Response): Promise<string | null> {
+type SiteProfile = { merchantId: string; loginCaptcha: number | null };
+
+const profileCache = new Map<string, { profile: SiteProfile; expires: number }>();
+const PROFILE_TTL_MS = 30 * 60 * 1000;
+
+async function readSiteHtml(response: Response): Promise<{ profile: SiteProfile | null; sample: string }> {
   const reader = response.body?.getReader();
   if (!reader) {
-    const html = (await response.text()).slice(0, 1_200_000);
-    return readMerchantId(html);
+    const html = (await response.text()).slice(0, 2_000_000);
+    const found = readMerchantProfile(html);
+    return {
+      profile: found.merchantId ? { merchantId: found.merchantId, loginCaptcha: found.loginCaptcha } : null,
+      sample: html.slice(0, 4000),
+    };
   }
   const decoder = new TextDecoder();
   let html = "";
   try {
-    while (html.length < 1_200_000) {
+    while (html.length < 2_000_000) {
       const { done, value } = await reader.read();
       if (done) break;
       html += decoder.decode(value, { stream: true });
-      const id = readMerchantId(html);
-      if (id) return id;
+      const found = readMerchantProfile(html);
+      if (found.merchantId && found.loginCaptcha !== null) {
+        return { profile: { merchantId: found.merchantId, loginCaptcha: found.loginCaptcha }, sample: "" };
+      }
     }
   } finally {
     await reader.cancel().catch(() => undefined);
   }
-  return readMerchantId(html);
+  const found = readMerchantProfile(html);
+  return {
+    profile: found.merchantId ? { merchantId: found.merchantId, loginCaptcha: found.loginCaptcha } : null,
+    sample: html.slice(0, 4000),
+  };
 }
 
-async function merchantIdFor(host: string): Promise<string> {
-  const cached = merchantCache.get(host);
-  if (cached && cached.expires > Date.now()) return cached.id;
-  if (cached) merchantCache.delete(host);
+function transientFailure(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return (
+    error.name === "TimeoutError" ||
+    error.name === "AbortError" ||
+    /timeout|network|fetch|socket|reset|aborted|ebusy|eai_again|eagain/i.test(error.message)
+  );
+}
+
+function dnsFailure(error: unknown): Error {
+  const message = error instanceof Error ? error.message : "";
+  if (/not allowed|blocked address/i.test(message)) return error instanceof Error ? error : new Error(message);
+  if (/ENOTFOUND/i.test(message)) return new Error("This domain does not resolve. No login was sent.");
+  if (/EBUSY|EAI_AGAIN|EAGAIN/i.test(message)) return new Error("DNS was busy. No login was sent.");
+  return new Error("This domain could not be resolved. No login was sent.");
+}
+
+async function assertPublicHost(host: string): Promise<void> {
+  const parsed = parseProbeLine(host);
+  if (!parsed || !parsed.ok || parsed.host !== host) {
+    throw new Error("Host is not allowed");
+  }
+  const { lookup } = await import("node:dns/promises");
+  let last: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const { address } = await lookup(host, { verbatim: true });
+      if (address.includes(":") || isPrivateIpv4Address(address) || address === "0.0.0.0") {
+        throw new Error("Host resolves to a blocked address");
+      }
+      return;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (/not allowed|blocked address/i.test(message)) throw error;
+      last = error;
+      if (attempt < 2 && /EBUSY|EAI_AGAIN|EAGAIN|ETIMEOUT/i.test(message)) {
+        await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+        continue;
+      }
+      break;
+    }
+  }
+  throw dnsFailure(last);
+}
+
+function pageBlock(status: number, html: string): string | null {
+  if (/suspected phishing|just a moment|cf-browser-verification|attention required|enable javascript and cookies/i.test(html)) {
+    return `The site blocked the merchant page${status ? ` (HTTP ${status})` : ""}. No login was sent.`;
+  }
+  if (status >= 400) return `The merchant page returned HTTP ${status}. No login was sent.`;
+  return null;
+}
+
+async function loadSiteProfile(host: string): Promise<SiteProfile> {
+  const cached = profileCache.get(host);
+  if (cached && cached.expires > Date.now()) return cached.profile;
+  if (cached) profileCache.delete(host);
 
   let url = `https://${host}/`;
   let response: Response | null = null;
@@ -171,129 +146,77 @@ async function merchantIdFor(host: string): Promise<string> {
   }
 
   if (!response) throw new Error("This site did not publish a merchant ID");
-  const id = await htmlUntilMerchant(response);
-  if (!id) throw new Error("This site did not publish a merchant ID");
-  merchantCache.set(host, { id, expires: Date.now() + MERCHANT_TTL_MS });
-  return id;
+  if (response.status >= 400) {
+    const html = await response.text().catch(() => "");
+    throw new Error(pageBlock(response.status, html) ?? `The merchant page returned HTTP ${response.status}. No login was sent.`);
+  }
+  const { profile, sample } = await readSiteHtml(response);
+  if (!profile) {
+    throw new Error(pageBlock(response.status, sample) ?? "This page loaded, but it did not include a merchant ID. No login was sent.");
+  }
+  profileCache.set(host, { profile, expires: Date.now() + PROFILE_TTL_MS });
+  return profile;
 }
 
-async function assertPublicHost(host: string): Promise<void> {
-  const parsed = parseProbeLine(host);
-  if (!parsed || !parsed.ok || parsed.host !== host) {
-    throw new Error("Host is not allowed");
-  }
-  const { lookup } = await import("node:dns/promises");
-  const { address } = await lookup(host, { verbatim: true });
-  if (address.includes(":") || isPrivateIpv4Address(address) || address === "0.0.0.0") {
-    throw new Error("Host resolves to a blocked address");
+async function siteProfile(host: string): Promise<SiteProfile> {
+  try {
+    return await loadSiteProfile(host);
+  } catch (error) {
+    if (!transientFailure(error)) throw error;
+    return loadSiteProfile(host);
   }
 }
 
-export const probeLogin = createServerFn({ method: "POST" })
+export const prepareHost = createServerFn({ method: "POST" })
   .validator((value: unknown) => inputSchema.parse(value))
-  .handler(async ({ data }): Promise<ProbeResult> => {
-    const started = Date.now();
+  .handler(async ({ data }): Promise<HostPrep> => {
     const host = data.host.trim().toLowerCase();
     const endpoint = `https://${host}/api/v1/index.php`;
-    const base: ProbeResult = {
-      host,
-      endpoint,
-      verdict: "blocked",
-      httpStatus: null,
-      message: "",
-      snippet: "",
-      merchantId: data.merchantId,
-      ms: 0,
-    };
+    const base: HostPrep = { host, endpoint, merchantId: data.merchantId, needsCaptcha: false, skip: null };
 
     try {
       await assertPublicHost(host);
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Host is not allowed";
       return {
         ...base,
-        verdict: "blocked",
-        message: error instanceof Error ? error.message : "Host is not allowed",
-        ms: Date.now() - started,
-      };
-    }
-
-    if (data.password.length < 6 || data.password.length > 20) {
-      return {
-        ...base,
-        verdict: "password",
-        message: "Password must be 6–20 characters. No host was contacted.",
-        ms: Date.now() - started,
+        skip: {
+          verdict: /not allowed|blocked address/i.test(message) ? "blocked" : "unreachable",
+          message,
+        },
       };
     }
 
     let merchantId = data.merchantId;
-    if (!merchantId) {
-      try {
-        merchantId = await merchantIdFor(host);
-      } catch (error) {
-        return {
-          ...base,
-          verdict: "unclear",
-          message: error instanceof Error ? error.message : "Could not read a merchant ID",
-          ms: Date.now() - started,
-        };
-      }
-    }
-
-    const body = new URLSearchParams({
-      mobile: data.mobile,
-      password: data.password,
-      module: "/users/login",
-      merchantId,
-      accessId: "",
-      accessToken: "",
-      walletIsAdmin: "",
-    });
-
+    let loginCaptcha: number | null = null;
     try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        redirect: "manual",
-        signal: AbortSignal.timeout(12_000),
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Accept: "application/json, text/plain, */*",
-          Origin: `https://${host}`,
-          Referer: `https://${host}/`,
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        },
-        body,
-      });
-
-      if (response.status >= 300 && response.status < 400) {
+      const profile = await siteProfile(host);
+      loginCaptcha = profile.loginCaptcha;
+      merchantId = merchantId ?? profile.merchantId;
+    } catch (error) {
+      if (!merchantId) {
+        const message = error instanceof Error ? error.message : "Could not read a merchant ID";
+        const verdict = /blocked the merchant page|suspected phishing/i.test(message)
+          ? "blocked"
+          : /does not resolve|DNS was busy|could not be resolved|timed out|timeout/i.test(message)
+            ? "unreachable"
+            : "unclear";
         return {
           ...base,
-          verdict: "unclear",
-          httpStatus: response.status,
-          message: "The host redirected instead of answering the login API",
-          ms: Date.now() - started,
+          skip: { verdict, message },
         };
       }
+    }
 
-      const text = (await response.text()).slice(0, 600);
-      const judged = classify(response.status, text);
+    if (!merchantId) {
       return {
         ...base,
-        verdict: judged.verdict,
-        httpStatus: response.status,
-        message: judged.message.slice(0, 240),
-        snippet: text.replace(/\s+/g, " ").slice(0, 280),
-        merchantId,
-        ms: Date.now() - started,
-      };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Request failed";
-      return {
-        ...base,
-        verdict: "unreachable",
-        message: message.slice(0, 240),
-        ms: Date.now() - started,
+        skip: {
+          verdict: "unclear",
+          message: "Could not read a merchant ID. No attempt was sent.",
+        },
       };
     }
+
+    return { ...base, merchantId, needsCaptcha: captchaRequired(loginCaptcha), skip: null };
   });

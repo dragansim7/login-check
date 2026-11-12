@@ -1,0 +1,27 @@
+R_DEF: Internal format may change without notice
+local
+drawable card_bg
+drawable field_bg
+drawable ic_launcher
+drawable panel_bg
+id egressIp
+id egressMask
+id egressMeta
+id egressMs
+id egressPlace
+id egressRefresh
+id hosts
+id mobile
+id password
+id passwordHint
+id results
+id run
+id stop
+id teleElapsed
+id teleLanes
+id teleOutcomes
+id teleStats
+id teleStatus
+layout activity_main
+string app_name
+style Theme.Probe

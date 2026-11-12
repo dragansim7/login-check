@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#0B0A09">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="LOGIN API"
+            android:textColor="#E0A04A"
+            android:textSize="11sp"
+            android:letterSpacing="0.18" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Mirror Login Probe"
+            android:textColor="#F6F0E6"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Paste hosts one per line. Paths are ignored. The login is sent from this phone."
+            android:textColor="#A89884"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/panel_bg"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.08"
+                    android:text="OUTGOING EGRESS IP + MASK"
+                    android:textColor="#E0A04A"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/egressMs"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—"
+                    android:textColor="#A89884"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/egressRefresh"
+                    android:layout_width="40dp"
+                    android:layout_height="36dp"
+                    android:backgroundTint="#14110E"
+                    android:text="↻"
+                    android:textColor="#E0A04A" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:letterSpacing="0.12"
+                android:text="CURRENT EGRESS IP"
+                android:textColor="#A89884"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/egressIp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:text="Detecting…"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/egressMeta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Looking up this connection"
+                android:textColor="#D7D0C6"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/egressPlace"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="—"
+                android:textColor="#D7D0C6"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/egressMask"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Mask: this phone"
+                android:textColor="#F0E2C8"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/panel_bg"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.08"
+                    android:text="LIVE WORKER TELEMETRY"
+                    android:textColor="#E0A04A"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/teleStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="STANDBY"
+                    android:textColor="#E0A04A"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/teleElapsed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="0.0s"
+                    android:textColor="#F6F0E6"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/teleStats"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:fontFamily="monospace"
+                android:text="DONE 0/0    QUEUE 0 left\nAVG PING —    SPEED —"
+                android:textColor="#F6F0E6"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/teleLanes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="monospace"
+                android:text="W1 IDLE  Waiting for host…\nW2 IDLE  Waiting for host…\nW3 IDLE  Waiting for host…"
+                android:textColor="#D7D0C6"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/teleOutcomes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="monospace"
+                android:text="LOGIN 0   FAILED 0   DEAD 0   CAPTCHA 0"
+                android:textColor="#F6F0E6"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="Mobile or username"
+            android:textColor="#A89884"
+            android:textSize="13sp" />
+
+        <EditText
+            android:id="@+id/mobile"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/field_bg"
+            android:hint="61480050689"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            android:paddingHorizontal="12dp"
+            android:textColor="#F6F0E6"
+            android:textColorHint="#6E6256"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Password"
+            android:textColor="#A89884"
+            android:textSize="13sp" />
+
+        <EditText
+            android:id="@+id/password"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/field_bg"
+            android:importantForAutofill="no"
+            android:inputType="textPassword"
+            android:paddingHorizontal="12dp"
+            android:textColor="#F6F0E6"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/passwordHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="6–20 characters."
+            android:textColor="#A89884"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Hosts"
+            android:textColor="#A89884"
+            android:textSize="13sp" />
+
+        <EditText
+            android:id="@+id/hosts"
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/field_bg"
+            android:gravity="top"
+            android:hint="9au.com"
+            android:inputType="textMultiLine|textNoSuggestions"
+            android:padding="12dp"
+            android:text="9au.com"
+            android:textColor="#F6F0E6"
+            android:textColorHint="#6E6256"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/run"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="#E0A04A"
+            android:text="Check hosts"
+            android:textAllCaps="false"
+            android:textColor="#1A1208"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/stop"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="#221C16"
+            android:text="Stop"
+            android:textAllCaps="false"
+            android:textColor="#F6F0E6"
+            android:visibility="gone" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Results"
+            android:textColor="#F6F0E6"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/results"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical" />
+    </LinearLayout>
+</ScrollView>
